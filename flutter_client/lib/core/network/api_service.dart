@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 
 class ApiService {
-  static const String _baseUrl= 'http://192.168.1.37.5000';
+  static const String _baseUrl = 'http://172.17.8.122:5000';
 
 
 
@@ -21,7 +21,7 @@ class ApiService {
     try{
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json; charset=UTF-T'},
+        headers: {'Content-Type': 'application/json; charset=UTF-8'},
         body:json.encode({
           'gonderen': gonderen,
           'sifreli_icerik':sifreliIcerik,

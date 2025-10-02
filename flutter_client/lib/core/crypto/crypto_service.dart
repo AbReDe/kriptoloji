@@ -17,5 +17,5 @@ class CryptoService {
     return sifreli.toString();
   }
 
-// TODO: Diğer şifreleme metodları ve çözme metodları buraya eklenecek
+
 }
