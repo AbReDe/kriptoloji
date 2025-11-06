@@ -3,14 +3,7 @@ import 'package:http/http.dart' as http;
 
 
 class ApiService {
-  static const String _baseUrl = 'http://172.17.8.122:5000';
-
-
-
-
-
-
-
+  static const String _baseUrl = 'http://10.0.2.2:5000';
 
   Future<bool> MesajGonder({
     required String  gonderen,
@@ -18,6 +11,8 @@ class ApiService {
     required String yontem,
 })async{
     final url = Uri.parse('$_baseUrl/mesaj_gonder');
+    print('api servisteyim gonderen: $gonderen , icerik: $sifreliIcerik , yontem: $yontem');
+    print("bence hala daha sorunnvar amk");
     try{
       final response = await http.post(
         url,
@@ -40,33 +35,31 @@ class ApiService {
       print('baglanti hatasi balikom $e');
       return false;
     }
-  }//asyc mesaj gonder fonk sonu
+  }//mesaj gonder fonk sonu
 
 
+  Future<List<dynamic>> mesajlariAl() async {
+    final url = Uri.parse('$_baseUrl/mesajlari_al');
 
+    try {
+      final response = await http.get(url);
 
+      print("Status code: ${response.statusCode}");
+      print("Response body: ${response.body}");
 
-
-
-
-
-
-Future<List<dynamic>> mesajlariAl()async {
-  final url = Uri.parse('$_baseUrl/mesajlari_al');
-
-  try {
-    final response = await http.get(url);
-    if (response == 200) {
-      return json.decode(response.body);
-    } else {
-      print(' mesaji cekmedin agaa============ ${response.body}');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        print("Mesajlar başarıyla alındı: $data");
+        return data;
+      } else {
+        print("mesaji cekmedin agaa: ${response.body}");
+        return [];
+      }
+    } catch (e) {
+      print("aga baglanamadik la : $e");
       return [];
     }
-  } catch (e) {
-    print('aga baglanamadik la : $e');
-    return [];
   }
-}// mesajlari al sonu da
 
 
 
