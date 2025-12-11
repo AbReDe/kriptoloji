@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kriptoloji/features/screens/chat_screen.dart';
+import 'features/screens/user_select.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,11 +12,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'kriptoloji',
+      title: 'Kriptoloji',
       theme: ThemeData(
-        primaryColor: Colors.blue
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
       ),
-      home:const ChatScreen()
+
+      home: const user_select(),
     );
   }
 }
