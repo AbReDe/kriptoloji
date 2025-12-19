@@ -5,7 +5,6 @@ import '../../core/model/message.dart';
 
 class ChatScreen extends StatefulWidget {
   final String currentUser;
-
   const ChatScreen({Key? key, required this.currentUser}) : super(key: key);
 
   @override
@@ -34,8 +33,8 @@ class _ChatScreenState extends State<ChatScreen> {
     'AES (Manual)',
     'DES (Manual)',
   ];
-  List<Message> _mesajlar = [];
 
+  List<Message> _mesajlar = [];
   bool _mesajlarYukleniyor = false;
   bool _isLoading = false;
 
@@ -51,317 +50,281 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
+  // ================== MESAJ GÖNDER ==================
   void _mesajGonder() async {
     if (_mesajController.text.isEmpty) return;
-
     setState(() => _isLoading = true);
 
-    String duzMetin = _mesajController.text;
-    String sifreliMetin = '';
+    String duz = _mesajController.text;
+    String sifreli = '';
 
     switch (_seciliYontem) {
       case 'Sezar':
-        sifreliMetin = _cryptoService.sezarSifrele(duzMetin, 3);
+        sifreli = _cryptoService.sezarSifrele(duz, 3);
         break;
-
       case 'Affine':
-        sifreliMetin = _cryptoService.affineSifrele(duzMetin, 5, 8);
+        sifreli = _cryptoService.affineSifrele(duz, 5, 8);
         break;
-
       case 'Playfair':
-        const key = "SECRET";
-        sifreliMetin = _cryptoService.playfairSifrele(duzMetin, key);
+        sifreli = _cryptoService.playfairSifrele(duz, "SECRET");
         break;
-
       case 'Substitution':
-        const key = "QWERTYUIOPASDFGHJKLZXCVBNM";
-        sifreliMetin = _cryptoService.substitutionSifrele(duzMetin, key);
+        sifreli = _cryptoService.substitutionSifrele(
+            duz, "QWERTYUIOPASDFGHJKLZXCVBNM");
         break;
-
       case 'Vigenere':
-        const key = "ANAHTAR";
-        sifreliMetin = _cryptoService.vigenereSifrele(duzMetin, key);
+        sifreli = _cryptoService.vigenereSifrele(duz, "ANAHTAR");
         break;
-
       case 'Rail Fence':
-        int raySayisi = 3;
-        sifreliMetin = _cryptoService.railFenceSifrele(duzMetin, raySayisi);
+        sifreli = _cryptoService.railFenceSifrele(duz, 3);
         break;
-
       case 'Route':
-        int kolonSayisi = 4;
-        sifreliMetin = _cryptoService.routeSifrele(duzMetin, kolonSayisi);
+        sifreli = _cryptoService.routeSifrele(duz, 4);
         break;
-
       case 'Columnar Transposition':
-        const key = "GERMAN";
-        sifreliMetin = _cryptoService.columnarTranspositionSifrele(duzMetin, key);
+        sifreli = _cryptoService.columnarTranspositionSifrele(duz, "GERMAN");
         break;
-
       case 'Polybius':
-        sifreliMetin = _cryptoService.polybiusSifrele(duzMetin);
+        sifreli = _cryptoService.polybiusSifrele(duz);
         break;
-
       case 'Hill':
-        const key = "GYBNQKURP";
-        sifreliMetin = _cryptoService.hillSifrele(duzMetin, key);
+        sifreli = _cryptoService.hillSifrele(duz, "GYBNQKURP");
         break;
-
       case 'Vernam':
-        const key = "RANDOMKEYGENERATEDFOREXAMPLE";
-        sifreliMetin = _cryptoService.vernamSifrele(duzMetin, key);
+        sifreli = _cryptoService.vernamSifrele(
+            duz, "RANDOMKEYGENERATEDFOREXAMPLE");
         break;
       case 'AES (Lib)':
-        sifreliMetin = _cryptoService.aesLibSifrele(duzMetin);
+        sifreli = _cryptoService.aesLibSifrele(duz);
         break;
-
       case 'AES (Manual)':
-        const key = "MYSECRETKEYMANUAL";
-        sifreliMetin = _cryptoService.aesManualSifrele(duzMetin, key);
+        sifreli = _cryptoService.aesManualSifrele(duz, "MYSECRETKEYMANUAL");
         break;
-
       case 'DES (Manual)':
-        const key = "KEYDES88";
-        sifreliMetin = _cryptoService.desManualSifrele(duzMetin, key);
+        sifreli = _cryptoService.desManualSifrele(duz, "KEYDES88");
         break;
-
       default:
-        sifreliMetin = duzMetin;
+        sifreli = duz;
     }
 
-    bool basarili = await _apiService.MesajGonder(
+    await _apiService.MesajGonder(
       gonderen: widget.currentUser,
-      sifreliIcerik: sifreliMetin,
+      sifreliIcerik: sifreli,
       yontem: _seciliYontem,
     );
 
-    if (!mounted) return;
-
+    _mesajController.clear();
     setState(() => _isLoading = false);
-
-    if (basarili) {
-      _mesajController.clear();
-      _mesajlariCek();
-    }
+    _mesajlariCek();
   }
 
+  // ================== MESAJ ÇEK ==================
   Future<void> _mesajlariCek() async {
     setState(() => _mesajlarYukleniyor = true);
+    final raw = await _apiService.mesajlariAl();
+    final List<Message> list = [];
 
-    try {
-      final gelenMesajlarRaw = await _apiService.mesajlariAl();
-      final List<Message> cozulmusMesajlar = [];
+    for (var e in raw) {
+      final msg = Message.fromJson(e);
+      String coz = '';
 
-      for (var eleman in gelenMesajlarRaw) {
-        final msg = Message.fromJson(eleman);
-        String cozulmusMetin = '';
-
-        // --- ÇÖZME (DECRYPTION) İŞLEMLERİ ---
-        // Şifrelerken kullanılan anahtarların AYNISI burada da olmalı.
-        switch (msg.yontem) {
-          case 'Sezar':
-            cozulmusMetin = _cryptoService.sezarCoz(msg.sifreliIcerik, 3);
-            break;
-
-          case 'Affine':
-            cozulmusMetin = _cryptoService.affineCoz(msg.sifreliIcerik, 5, 8);
-            break;
-
-          case 'Playfair':
-            const key = "SECRET";
-            cozulmusMetin = _cryptoService.playfairCoz(msg.sifreliIcerik, key);
-            break;
-
-          case 'Substitution':
-            const key = "QWERTYUIOPASDFGHJKLZXCVBNM";
-            cozulmusMetin = _cryptoService.substitutionCoz(msg.sifreliIcerik, key);
-            break;
-
-          case 'Vigenere':
-            const key = "ANAHTAR";
-            cozulmusMetin = _cryptoService.vigenereCoz(msg.sifreliIcerik, key);
-            break;
-
-          case 'Rail Fence':
-            int raySayisi = 3;
-            cozulmusMetin = _cryptoService.railFenceCoz(msg.sifreliIcerik, raySayisi);
-            break;
-
-          case 'Route':
-            int kolonSayisi = 4;
-            cozulmusMetin = _cryptoService.routeCoz(msg.sifreliIcerik, kolonSayisi);
-            break;
-
-          case 'Columnar Transposition':
-            const key = "GERMAN";
-            cozulmusMetin = _cryptoService.columnarTranspositionCoz(msg.sifreliIcerik, key);
-            break;
-
-          case 'Polybius':
-            cozulmusMetin = _cryptoService.polybiusCoz(msg.sifreliIcerik);
-            break;
-
-          case 'Hill':
-            const key = "GYBNQKURP";
-            cozulmusMetin = _cryptoService.hillCoz(msg.sifreliIcerik, key);
-            break;
-
-          case 'Vernam':
-            const key = "RANDOMKEYGENERATEDFOREXAMPLE";
-            cozulmusMetin = _cryptoService.vernamCoz(msg.sifreliIcerik, key);
-            break;
-
-          case 'AES (Lib)':
-            cozulmusMetin = _cryptoService.aesLibCoz(msg.sifreliIcerik);
-            break;
-
-          case 'AES (Manual)':
-            const key = "MYSECRETKEYMANUAL";
-            cozulmusMetin = _cryptoService.aesManualCoz(msg.sifreliIcerik, key);
-            break;
-
-          case 'DES (Manual)':
-            const key = "KEYDES88";
-            cozulmusMetin = _cryptoService.desManualCoz(msg.sifreliIcerik, key);
-            break;
-
-          default:
-          // Tanınmayan yöntemse olduğu gibi göster
-            cozulmusMetin = msg.sifreliIcerik;
-        }
-
-        msg.cozulmusIcerik = cozulmusMetin;
-        cozulmusMesajlar.add(msg);
+      switch (msg.yontem) {
+        case 'Sezar':
+          coz = _cryptoService.sezarCoz(msg.sifreliIcerik, 3);
+          break;
+        case 'Affine':
+          coz = _cryptoService.affineCoz(msg.sifreliIcerik, 5, 8);
+          break;
+        case 'Playfair':
+          coz = _cryptoService.playfairCoz(msg.sifreliIcerik, "SECRET");
+          break;
+        case 'Substitution':
+          coz = _cryptoService.substitutionCoz(
+              msg.sifreliIcerik, "QWERTYUIOPASDFGHJKLZXCVBNM");
+          break;
+        case 'Vigenere':
+          coz = _cryptoService.vigenereCoz(msg.sifreliIcerik, "ANAHTAR");
+          break;
+        case 'Rail Fence':
+          coz = _cryptoService.railFenceCoz(msg.sifreliIcerik, 3);
+          break;
+        case 'Route':
+          coz = _cryptoService.routeCoz(msg.sifreliIcerik, 4);
+          break;
+        case 'Columnar Transposition':
+          coz = _cryptoService.columnarTranspositionCoz(msg.sifreliIcerik, "GERMAN");
+          break;
+        case 'Polybius':
+          coz = _cryptoService.polybiusCoz(msg.sifreliIcerik);
+          break;
+        case 'Hill':
+          coz = _cryptoService.hillCoz(msg.sifreliIcerik, "GYBNQKURP");
+          break;
+        case 'Vernam':
+          coz = _cryptoService.vernamCoz(
+              msg.sifreliIcerik, "RANDOMKEYGENERATEDFOREXAMPLE");
+          break;
+        case 'AES (Lib)':
+          coz = _cryptoService.aesLibCoz(msg.sifreliIcerik);
+          break;
+        case 'AES (Manual)':
+          coz = _cryptoService.aesManualCoz(msg.sifreliIcerik, "MYSECRETKEYMANUAL");
+          break;
+        case 'DES (Manual)':
+          coz = _cryptoService.desManualCoz(msg.sifreliIcerik, "KEYDES88");
+          break;
+        default:
+          coz = msg.sifreliIcerik;
       }
 
-
-
-      setState(() {
-        _mesajlar = cozulmusMesajlar.reversed.toList();
-        _mesajlarYukleniyor = false;
-      });
-    } catch (e) {
-      print("Hata oluştu: $e");
-      setState(() => _mesajlarYukleniyor = false);
+      msg.cozulmusIcerik = coz;
+      list.add(msg);
     }
+
+    setState(() {
+      _mesajlar = list.reversed.toList();
+      _mesajlarYukleniyor = false;
+    });
   }
 
+  // ================== UI ==================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F5FA),
       appBar: AppBar(
-        title: Text('${widget.currentUser} Paneli'),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _mesajlariCek),
-        ],
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: const Color(0xFF3F3D56),
+        title: const Text(
+          "Secure Chat",
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
       ),
       body: Column(
         children: [
-
-
-
-          // --- MESAJ LİSTESİ ALANI ---
           Expanded(
             child: _mesajlarYukleniyor
                 ? const Center(child: CircularProgressIndicator())
-                : _mesajlar.isEmpty
-                ? const Center(child: Text("Henüz mesaj yok."))
                 : ListView.builder(
               reverse: true,
+              padding: const EdgeInsets.symmetric(vertical: 12),
               itemCount: _mesajlar.length,
               itemBuilder: (context, index) {
-                final mesaj = _mesajlar[index];
+                final m = _mesajlar[index];
+                final benim = m.gonderen == widget.currentUser;
 
-                bool benimMesajim = mesaj.gonderen == widget.currentUser;
-
-                return Align(
-                  alignment: benimMesajim ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                    padding: const EdgeInsets.all(12),
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                    decoration: BoxDecoration(
-                      color: benimMesajim ? Colors.blue[100] : Colors.grey[300],
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(15),
-                        topRight: const Radius.circular(15),
-                        bottomLeft: benimMesajim ? const Radius.circular(15) : Radius.zero,
-                        bottomRight: benimMesajim ? Radius.zero : const Radius.circular(15),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  child: Align(
+                    alignment: benim ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.75,
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Gönderen Adı (Karşı tarafsa göster)
-                        if (!benimMesajim)
+                      decoration: BoxDecoration(
+                        color: benim ? const Color(0xFF5C6BC0) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (!benim)
+                            Text(
+                              m.gonderen,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF3F3D56),
+                              ),
+                            ),
+                          const SizedBox(height: 6),
                           Text(
-                            mesaj.gonderen,
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple, fontSize: 12),
+                            m.cozulmusIcerik,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: benim ? Colors.white : Colors.black87,
+                            ),
                           ),
-
-                        const SizedBox(height: 4),
-
-                        Text(
-                          mesaj.cozulmusIcerik,
-                          style: const TextStyle(fontSize: 16, color: Colors.black87),
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        Text(
-                          "🔒 ${mesaj.sifreliIcerik} (${mesaj.yontem})",
-                          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          Text(
+                            "🔐 ${m.yontem}",
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: benim
+                                  ? Colors.white70
+                                  : Colors.black45,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
               },
             ),
           ),
+          _buildInputBar(),
+        ],
+      ),
+    );
+  }
 
-          // --- MESAJ YAZMA ALANI  ---
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            color: Colors.white,
-            child: Row(
-              children: [
-                DropdownButton<String>(
-                  value: _seciliYontem,
-                  underline: Container(), // Çizgiyi kaldırır
-                  icon: const Icon(Icons.lock_outline, size: 20),
-                  items: _sifrelemeYontemleri.map((y) => DropdownMenuItem(value: y, child: Text(y, style: const TextStyle(fontSize: 13)))).toList(),
-                  onChanged: (v) => setState(() => _seciliYontem = v!),
+  Widget _buildInputBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.black12, blurRadius: 10),
+        ],
+      ),
+      child: Row(
+        children: [
+          DropdownButton<String>(
+            value: _seciliYontem,
+            underline: const SizedBox(),
+            items: _sifrelemeYontemleri
+                .map((e) => DropdownMenuItem(
+              value: e,
+              child: Text(e, style: const TextStyle(fontSize: 12)),
+            ))
+                .toList(),
+            onChanged: (v) => setState(() => _seciliYontem = v!),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _mesajController,
+              decoration: InputDecoration(
+                hintText: "Mesajınızı yazın...",
+                filled: true,
+                fillColor: const Color(0xFFF0F1F6),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
                 ),
-
-                const SizedBox(width: 8),
-
-                Expanded(
-                  child: TextField(
-                    controller: _mesajController,
-                    decoration: InputDecoration(
-                      hintText: "Mesaj yazın...",
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(width: 8),
-
-
-                _isLoading
-                    ? const SizedBox(width: 40, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
-                    : CircleAvatar(
-                  backgroundColor: Colors.blue,
-                  child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white),
-                    onPressed: _mesajGonder,
-                  ),
-                ),
-              ],
+                contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _isLoading
+              ? const CircularProgressIndicator(strokeWidth: 2)
+              : CircleAvatar(
+            backgroundColor: const Color(0xFF3F3D56),
+            child: IconButton(
+              icon: const Icon(Icons.send, color: Colors.white),
+              onPressed: _mesajGonder,
             ),
           ),
         ],

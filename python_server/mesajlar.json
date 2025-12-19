@@ -1,0 +1,37 @@
+[
+    {
+        "id": 1,
+        "gonderen": "User1",
+        "sifreli_icerik": "vgdgdvg",
+        "yontem": "Sezar",
+        "timestamp": "15-12-2025 22:38"
+    },
+    {
+        "id": 2,
+        "gonderen": "User2",
+        "sifreli_icerik": "edrsadjs",
+        "yontem": "Rail Fence",
+        "timestamp": "15-12-2025 22:38"
+    },
+    {
+        "id": 3,
+        "gonderen": "User1",
+        "sifreli_icerik": "phuukded",
+        "yontem": "Sezar",
+        "timestamp": "15-12-2025 22:38"
+    },
+    {
+        "id": 4,
+        "gonderen": "User1",
+        "sifreli_icerik": "qdvovq",
+        "yontem": "Sezar",
+        "timestamp": "19-12-2025 17:47"
+    },
+    {
+        "id": 5,
+        "gonderen": "User1",
+        "sifreli_icerik": "JDkhLTAiLTs=",
+        "yontem": "AES (Manual)",
+        "timestamp": "19-12-2025 17:47"
+    }
+]
